@@ -6,34 +6,172 @@ import { useRouter } from "next/navigation";
 export default function Page() {
   const router = useRouter();
   const [roomId, setRoomId] = useState("");
+  const [draftMode, setDraftMode] = useState("fearless");
+  const [matchFormat, setMatchFormat] = useState("bo5");
+  const [playerCount, setPlayerCount] = useState("solo");
+  const [timeLimit, setTimeLimit] = useState("tournament");
+  const [teamImage, setTeamImage] = useState<File | null>(null);
 
   const createGameCode = () => {
     const newRoomId = Math.random().toString(36).substring(2, 8);
-    router.push(`/room/${newRoomId}`);
+    router.push(`/draft?id=${newRoomId}`);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold">LoL 밴픽 사이트</h1>
-      <input
-        type="text"
-        placeholder="방 코드 입력"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-        className="border p-2 m-2"
-      />
-      <button
-        onClick={() => router.push(`/draft?id=${roomId}`)}
-        className="bg-blue-500 text-white p-2"
-      >
-        참가
-      </button>
-      <button
-        onClick={createGameCode}
-        className="bg-green-500 text-white p-2 mt-2"
-      >
-        방 만들기
-      </button>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <h1 className="text-2xl font-bold mb-8">LoL 밴픽 사이트</h1>
+
+      <div className="w-64 space-y-6">
+        <fieldset className="border p-4 rounded">
+          <legend className="font-semibold px-2">밴픽 모드</legend>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="fearless"
+                checked={draftMode === "fearless"}
+                onChange={(e) => setDraftMode(e.target.value)}
+                className="mr-2"
+              />
+              피어리스 드래프트
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="tournament"
+                checked={draftMode === "tournament"}
+                onChange={(e) => setDraftMode(e.target.value)}
+                className="mr-2"
+              />
+              토너먼트 드래프트
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="solorank"
+                checked={draftMode === "solorank"}
+                onChange={(e) => setDraftMode(e.target.value)}
+                className="mr-2"
+              />
+              솔로랭크
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="border p-4 rounded">
+          <legend className="font-semibold px-2">대회 세트 수</legend>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="bo5"
+                checked={matchFormat === "bo5"}
+                onChange={(e) => setMatchFormat(e.target.value)}
+                className="mr-2"
+              />
+              5판 3선승
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="bo3"
+                checked={matchFormat === "bo3"}
+                onChange={(e) => setMatchFormat(e.target.value)}
+                className="mr-2"
+              />
+              3판 2선승
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="bo1"
+                checked={matchFormat === "bo1"}
+                onChange={(e) => setMatchFormat(e.target.value)}
+                className="mr-2"
+              />
+              단판제
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="border p-4 rounded">
+          <legend className="font-semibold px-2">밴픽 참여자 수</legend>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="solo"
+                checked={playerCount === "solo"}
+                onChange={(e) => setPlayerCount(e.target.value)}
+                className="mr-2"
+              />
+              1인 진행
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="representative"
+                checked={playerCount === "representative"}
+                onChange={(e) => setPlayerCount(e.target.value)}
+                className="mr-2"
+              />
+              팀 대표 1vs1
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="team"
+                checked={playerCount === "team"}
+                onChange={(e) => setPlayerCount(e.target.value)}
+                className="mr-2"
+              />
+              팀 전원 5vs5
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="border p-4 rounded">
+          <legend className="font-semibold px-2">밴픽 시간</legend>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="tournament"
+                checked={timeLimit === "tournament"}
+                onChange={(e) => setTimeLimit(e.target.value)}
+                className="mr-2"
+              />
+              대회와 동일하게
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="unlimited"
+                checked={timeLimit === "unlimited"}
+                onChange={(e) => setTimeLimit(e.target.value)}
+                className="mr-2"
+              />
+              시간 무제한
+            </label>
+          </div>
+        </fieldset>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setTeamImage(e.target.files?.[0] || null)}
+          className="w-full"
+        />
+
+        <div className="space-y-2 mt-8">
+          <button
+            onClick={createGameCode}
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            방 만들기
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
