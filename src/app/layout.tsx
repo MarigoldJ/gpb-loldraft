@@ -1,5 +1,6 @@
 "use client";
 
+import "@/app/globals.css"; // Add this line
 import Providers from "@/components/Providers/ReactQueryProvider";
 
 export default function RootLayout({

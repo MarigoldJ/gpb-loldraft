@@ -16,29 +16,6 @@ interface RoomSettings {
   timeLimit: string;
 }
 
-const ChampionGrid = dynamic(
-  () =>
-    Promise.resolve(({ champions, settings }: any) => (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {champions.map((champion: any) => (
-          <div
-            key={champion.id}
-            className="flex flex-col items-center p-2 border rounded hover:bg-gray-100 transition-colors"
-          >
-            <img
-              src={`${RIOT_BASE_URL}/cdn/${settings?.version}/img/champion/${champion.id}.png`}
-              alt={champion.name}
-              className="w-16 h-16 object-cover"
-              loading="lazy"
-            />
-            <span className="mt-2 text-sm text-center">{champion.name}</span>
-          </div>
-        ))}
-      </div>
-    )),
-  { ssr: false }
-);
-
 export default function Room() {
   const searchParams = useSearchParams();
   const gameCode = searchParams?.get("gameCode");
@@ -138,26 +115,49 @@ export default function Room() {
   }
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold">방 ID: {gameCode}</h2>
-      {settings && (
-        <div className="mt-4 space-y-2">
-          <p>패치 버전: {settings.version}</p>
-          <p>게임 모드: {settings.draftMode}</p>
-          <p>대회 형식: {settings.matchFormat}</p>
-          <p>참여 인원: {settings.playerCount}</p>
-          <p>시간 제한: {settings.timeLimit}</p>
-        </div>
-      )}
+    <div className="w-full min-h-screen">
+      <div className="container mx-auto p-4 flex flex-col items-center">
+        <h2 className="text-xl font-bold">방 ID: {gameCode}</h2>
+        {settings && (
+          <div className="mt-4 space-y-2">
+            <p>패치 버전: {settings.version}</p>
+            <p>게임 모드: {settings.draftMode}</p>
+            <p>대회 형식: {settings.matchFormat}</p>
+            <p>참여 인원: {settings.playerCount}</p>
+            <p>시간 제한: {settings.timeLimit}</p>
+          </div>
+        )}
 
-      {champions && (
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">챔피언 목록</h3>
-          <Suspense fallback={<div>Loading champions...</div>}>
-            <ChampionGrid champions={sortedChampions} settings={settings} />
-          </Suspense>
-        </div>
-      )}
+        {champions && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">챔피언 목록</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {sortedChampions.map((champion) => (
+                <div
+                  key={champion.id}
+                  className="group relative flex flex-col items-center border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                >
+                  {/* White overlay on hover */}
+                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+
+                  {/* Champion content */}
+                  <div className="relative z-10 p-3 w-full flex flex-col items-center">
+                    <img
+                      src={`${RIOT_BASE_URL}/cdn/${settings?.version}/img/champion/${champion.id}.png`}
+                      alt={champion.name}
+                      className="w-16 h-16 object-cover"
+                      loading="lazy"
+                    />
+                    <span className="mt-2 text-sm font-medium">
+                      {champion.name}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
