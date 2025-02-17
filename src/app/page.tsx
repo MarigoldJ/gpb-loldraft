@@ -34,9 +34,37 @@ export default function Page() {
     fetchVersions();
   }, []);
 
-  const createGameCode = () => {
-    const newRoomId = Math.random().toString(36).substring(2, 8);
-    router.push(`/draft?id=${newRoomId}&version=${selectedVersion}`);
+  const createGameCode = async () => {
+    try {
+      const settings = {
+        version: selectedVersion,
+        draftMode: draftMode,
+        matchFormat: matchFormat,
+        playerCount: playerCount,
+        timeLimit: timeLimit,
+      };
+
+      const response = await fetch("http://localhost:8000/create-room", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create room");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      const gameCode = data.room_id;
+
+      router.push(`/draft?gameCode=${gameCode}`);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      alert("방 생성에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -207,7 +235,7 @@ export default function Page() {
 
         <div className="space-y-2 mt-8">
           <button
-            onClick={createGameCode}
+            onClick={() => createGameCode()}
             className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
           >
             방 만들기
