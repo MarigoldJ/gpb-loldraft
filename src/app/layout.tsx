@@ -1,3 +1,5 @@
+"use client";
+
 import Providers from "@/components/Providers/ReactQueryProvider";
 
 export default function RootLayout({
@@ -7,7 +9,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body>
+      <body suppressHydrationWarning={true}>
         <Providers>{children}</Providers>
       </body>
     </html>

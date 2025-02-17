@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useBanPickStore } from "@/store/banPickStore";
 import { RIOT_BASE_URL } from "@/constants/riot";
 import type { ChampionData } from "@/types/champion";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 
 interface RoomSettings {
   version: string;
@@ -14,6 +16,29 @@ interface RoomSettings {
   timeLimit: string;
 }
 
+const ChampionGrid = dynamic(
+  () =>
+    Promise.resolve(({ champions, settings }: any) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {champions.map((champion: any) => (
+          <div
+            key={champion.id}
+            className="flex flex-col items-center p-2 border rounded hover:bg-gray-100 transition-colors"
+          >
+            <img
+              src={`${RIOT_BASE_URL}/cdn/${settings?.version}/img/champion/${champion.id}.png`}
+              alt={champion.name}
+              className="w-16 h-16 object-cover"
+              loading="lazy"
+            />
+            <span className="mt-2 text-sm text-center">{champion.name}</span>
+          </div>
+        ))}
+      </div>
+    )),
+  { ssr: false }
+);
+
 export default function Room() {
   const searchParams = useSearchParams();
   const gameCode = searchParams?.get("gameCode");
@@ -22,6 +47,7 @@ export default function Room() {
   const [settings, setSettings] = useState<RoomSettings | null>(null);
   const { bans, picks, setBans, setPicks } = useBanPickStore();
   const [champions, setChampions] = useState<ChampionData | null>(null);
+  const [sortedChampions, setSortedChampions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,6 +105,15 @@ export default function Room() {
     fetchData();
   }, [gameCode, setBans, setPicks]); // Removed settings?.version dependency
 
+  useEffect(() => {
+    if (champions?.data) {
+      const sorted = Object.values(champions.data).sort((a, b) =>
+        a.name.localeCompare(b.name, "ko-KR")
+      );
+      setSortedChampions(sorted);
+    }
+  }, [champions]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -118,26 +153,9 @@ export default function Room() {
       {champions && (
         <div className="mt-8">
           <h3 className="text-lg font-semibold mb-4">챔피언 목록</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {Object.values(champions.data)
-              .sort((a, b) => a.name.localeCompare(b.name, "ko-KR"))
-              .map((champion) => (
-                <div
-                  key={champion.id}
-                  className="flex flex-col items-center p-2 border rounded hover:bg-gray-100 transition-colors"
-                >
-                  <img
-                    src={`${RIOT_BASE_URL}/cdn/${settings?.version}/img/champion/${champion.id}.png`}
-                    alt={champion.name}
-                    className="w-16 h-16 object-cover"
-                    loading="lazy"
-                  />
-                  <span className="mt-2 text-sm text-center">
-                    {champion.name}
-                  </span>
-                </div>
-              ))}
-          </div>
+          <Suspense fallback={<div>Loading champions...</div>}>
+            <ChampionGrid champions={sortedChampions} settings={settings} />
+          </Suspense>
         </div>
       )}
     </div>
