@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+const RIOT_BASE_URL = "https://ddragon.leagueoflegends.com";
 
 export default function Page() {
   const router = useRouter();
+  const [versions, setVersions] = useState<string[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
   const [roomId, setRoomId] = useState("");
   const [draftMode, setDraftMode] = useState("fearless");
   const [matchFormat, setMatchFormat] = useState("bo5");
@@ -12,9 +17,26 @@ export default function Page() {
   const [timeLimit, setTimeLimit] = useState("tournament");
   const [teamImage, setTeamImage] = useState<File | null>(null);
 
+  useEffect(() => {
+    const fetchVersions = async () => {
+      try {
+        const response = await fetch(`${RIOT_BASE_URL}/api/versions.json`);
+        const data = await response.json();
+        setVersions(data);
+        setSelectedVersion(data[0]); // Set latest version as default
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch versions:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchVersions();
+  }, []);
+
   const createGameCode = () => {
     const newRoomId = Math.random().toString(36).substring(2, 8);
-    router.push(`/draft?id=${newRoomId}`);
+    router.push(`/draft?id=${newRoomId}&version=${selectedVersion}`);
   };
 
   return (
@@ -22,6 +44,26 @@ export default function Page() {
       <h1 className="text-2xl font-bold mb-8">LoL 밴픽 사이트</h1>
 
       <div className="w-64 space-y-6">
+        <fieldset className="border p-4 rounded">
+          <legend className="font-semibold px-2">패치 버전</legend>
+          <select
+            value={selectedVersion}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="w-full p-2 border rounded"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <option>로딩중...</option>
+            ) : (
+              versions.map((version) => (
+                <option key={version} value={version}>
+                  {version}
+                </option>
+              ))
+            )}
+          </select>
+        </fieldset>
+
         <fieldset className="border p-4 rounded">
           <legend className="font-semibold px-2">밴픽 모드</legend>
           <div className="space-y-2">
