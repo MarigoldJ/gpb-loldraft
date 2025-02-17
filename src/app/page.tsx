@@ -55,7 +55,7 @@ export default function Page() {
             {isLoading ? (
               <option>로딩중...</option>
             ) : (
-              versions.map((version) => (
+              versions.slice(0, 3).map((version) => (
                 <option key={version} value={version}>
                   {version}
                 </option>
