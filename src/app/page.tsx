@@ -60,7 +60,10 @@ export default function Page() {
       console.log(data);
       const gameCode = data.room_id;
 
-      router.push(`/draft?gameCode=${gameCode}`);
+      // 드래프트 모드에 따라 다른 경로로 이동
+      const draftPath =
+        draftMode === "fearless" ? "/draft/fearless" : "/draft/tournament";
+      router.push(`${draftPath}?gameCode=${gameCode}`);
     } catch (error) {
       console.error("Failed to create room:", error);
       alert("방 생성에 실패했습니다. 다시 시도해주세요.");
@@ -114,16 +117,6 @@ export default function Page() {
                 className="mr-2"
               />
               토너먼트 드래프트
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                value="solorank"
-                checked={draftMode === "solorank"}
-                onChange={(e) => setDraftMode(e.target.value)}
-                className="mr-2"
-              />
-              솔로랭크
             </label>
           </div>
         </fieldset>
