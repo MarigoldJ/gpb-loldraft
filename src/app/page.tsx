@@ -60,10 +60,8 @@ export default function Page() {
       console.log(data);
       const gameCode = data.room_id;
 
-      // 드래프트 모드에 따라 다른 경로로 이동
-      const draftPath =
-        draftMode === "fearless" ? "/draft/fearless" : "/draft/tournament";
-      router.push(`${draftPath}?gameCode=${gameCode}`);
+      // 로비 페이지로 이동
+      router.push(`/lobby/${gameCode}`);
     } catch (error) {
       console.error("Failed to create room:", error);
       alert("방 생성에 실패했습니다. 다시 시도해주세요.");
