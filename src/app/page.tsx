@@ -78,7 +78,7 @@ export default function Page() {
           <select
             value={selectedVersion}
             onChange={(e) => setSelectedVersion(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-black"
             disabled={isLoading}
           >
             {isLoading ? (

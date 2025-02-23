@@ -24,18 +24,35 @@ export default function LobbyPage() {
     gameCode: params?.gameCode || "",
     onStatusUpdate: (data) => {
       console.log("Status update received:", data);
+
+      // 상태 업데이트 처리 로직 개선
       if (data.users) {
+        // 전체 사용자 목록 업데이트
         setUsers(data.users);
+
+        // 현재 사용자 정보 업데이트
         if (currentUser) {
           const updatedCurrentUser = data.users.find(
             (user: LobbyUser) => user.id === currentUser.id
           );
           if (updatedCurrentUser) {
+            console.log("Updating current user:", updatedCurrentUser);
             setCurrentUser(updatedCurrentUser);
           }
         }
+
+        // 사용자 이동 로그 출력
+        const movedUser = data.users.find(
+          (user: LobbyUser) => user.team !== "SPECTATOR"
+        );
+        if (movedUser) {
+          console.log(
+            `User ${movedUser.nickname} moved to ${movedUser.team} team at position ${movedUser.position}`
+          );
+        }
       }
 
+      // 게임 상태가 변경되었을 때 처리
       if (data.status === "in_progress" && params?.gameCode) {
         router.push(
           `/draft/${data.settings.draftMode}?gameCode=${params.gameCode}`
@@ -128,14 +145,18 @@ export default function LobbyPage() {
       return;
     }
 
+    console.log(
+      `Attempting to move user ${currentUser.nickname} to ${team} team at position ${position}`
+    );
+
     const success = sendMessage({
       action: "update_team",
       userId: currentUser.id,
       teamData: { team, position },
     });
 
-    if (!success) {
-      // Fallback to REST API
+    if (!success && isConnected) {
+      console.warn("WebSocket message failed, falling back to REST API");
       try {
         const response = await fetch(
           `http://localhost:8000/game/${params.gameCode}/user/${currentUser.id}/team`,
@@ -149,8 +170,14 @@ export default function LobbyPage() {
         if (!response.ok) {
           throw new Error("Failed to update team");
         }
+
+        // REST API 호출이 성공하면 수동으로 상태 업데이트
+        const updatedUser = await response.json();
+        updateUser(updatedUser);
+        setCurrentUser(updatedUser);
       } catch (error) {
         console.error("Failed to join team:", error);
+        alert("팀 변경에 실패했습니다.");
       }
     }
   };
@@ -244,7 +271,7 @@ export default function LobbyPage() {
           >
             {user ? (
               <>
-                <span>{user.nickname}</span>
+                <span className="text-black">{user.nickname}</span>
                 <span className="text-sm text-gray-500">
                   {user.isReady ? "준비완료" : "대기중"}
                 </span>
