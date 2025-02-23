@@ -19,6 +19,7 @@ interface WebSocketMessage {
 
 interface UseLobbyWebSocketProps {
   gameCode: string;
+  userId?: string; // userId 추가
   isSpectator?: boolean;
   onStatusUpdate?: (data: any) => void;
   onError?: (error: any) => void;
@@ -26,6 +27,7 @@ interface UseLobbyWebSocketProps {
 
 export function useLobbyWebSocket({
   gameCode,
+  userId, // userId 파라미터 추가
   isSpectator = false,
   onStatusUpdate,
   onError,
@@ -63,23 +65,54 @@ export function useLobbyWebSocket({
     }
   }, []);
 
+  const attemptReconnect = useCallback(() => {
+    if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+      const delay = RECONNECT_DELAY * (reconnectAttemptsRef.current + 1);
+      console.log(
+        `Scheduling reconnect attempt ${
+          reconnectAttemptsRef.current + 1
+        } in ${delay}ms`
+      );
+
+      reconnectTimeoutRef.current = setTimeout(() => {
+        if (isComponentMounted.current) {
+          reconnectAttemptsRef.current++;
+          ensureConnection();
+        }
+      }, delay);
+    } else {
+      onError?.(new Error("Maximum reconnection attempts reached"));
+    }
+  }, [onError]); // ensureConnection will be used inside useEffect
+
   const ensureConnection = useCallback(async (): Promise<boolean> => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return true;
     }
 
     return new Promise((resolve) => {
-      if (!gameCode || !isComponentMounted.current) {
+      if (!gameCode || !userId || !isComponentMounted.current) {
+        console.error("Missing required parameters for WebSocket connection");
         resolve(false);
         return;
       }
 
+      // URL에 userId 파라미터 추가
       const ws = new WebSocket(
-        `ws://localhost:8000/ws/draft?id=${gameCode}&spectator=${isSpectator}`
+        `ws://localhost:8000/ws/draft?id=${gameCode}&userId=${userId}&spectator=${isSpectator}`
       );
       wsRef.current = ws;
 
+      const timeoutId = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          console.error("WebSocket connection timeout");
+          ws.close();
+          resolve(false);
+        }
+      }, CONNECTION_TIMEOUT);
+
       ws.onopen = () => {
+        clearTimeout(timeoutId);
         console.log("WebSocket Connected Successfully");
         setConnectionStatus("connected");
         reconnectAttemptsRef.current = 0;
@@ -87,8 +120,23 @@ export function useLobbyWebSocket({
         resolve(true);
       };
 
-      ws.onerror = () => {
-        console.error("WebSocket connection failed");
+      ws.onmessage = (event) => {
+        if (!isComponentMounted.current) return;
+
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Received message:", data);
+          if (data.type === "status_update" && data.data) {
+            onStatusUpdate?.(data.data);
+          }
+        } catch (error) {
+          console.warn("Failed to parse WebSocket message:", error);
+        }
+      };
+
+      ws.onerror = (event) => {
+        clearTimeout(timeoutId);
+        console.error("WebSocket Error:", event);
         setConnectionStatus("disconnected");
         isConnectingRef.current = false;
         wsRef.current = null;
@@ -96,6 +144,7 @@ export function useLobbyWebSocket({
       };
 
       ws.onclose = (event) => {
+        clearTimeout(timeoutId);
         if (!isComponentMounted.current) return;
 
         console.log(
@@ -104,18 +153,14 @@ export function useLobbyWebSocket({
         setConnectionStatus("disconnected");
         isConnectingRef.current = false;
         wsRef.current = null;
+
+        if (event.code !== 1000 && event.code !== 1001) {
+          attemptReconnect();
+        }
         resolve(false);
       };
-
-      // 타임아웃 설정
-      setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) {
-          ws.close();
-          resolve(false);
-        }
-      }, CONNECTION_TIMEOUT);
     });
-  }, [gameCode, isSpectator]);
+  }, [gameCode, userId, isSpectator, attemptReconnect, onStatusUpdate]);
 
   const connect = useCallback(() => {
     if (isConnectingRef.current) return;

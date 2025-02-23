@@ -22,6 +22,7 @@ export default function LobbyPage() {
 
   const { sendMessage, isConnected, connectionStatus } = useLobbyWebSocket({
     gameCode: params?.gameCode || "",
+    userId: currentUser?.id, // userId 추가
     onStatusUpdate: (data) => {
       console.log("Status update received:", data);
 
